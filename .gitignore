@@ -24,6 +24,11 @@ $RECYCLE.BIN/
 # OSX
 # =========================
 
+/VCS.iml
+/out
+/.gitignore
+/.gitattributes
+/.idea
 .DS_Store
 .AppleDouble
 .LSOverride
