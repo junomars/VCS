@@ -1,16 +1,15 @@
 package Model;
 
 import java.io.*;
-import java.nio.file.FileVisitResult;
-import java.nio.file.FileVisitor;
-import java.nio.file.Files;
-import java.nio.file.Path;
+import java.nio.file.*;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.text.SimpleDateFormat;
 import java.time.LocalDateTime;
 import java.util.Date;
 
 import static java.nio.file.FileVisitResult.CONTINUE;
+import static java.nio.file.FileVisitResult.SKIP_SUBTREE;
+import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
 import static java.nio.file.StandardOpenOption.APPEND;
 import static java.nio.file.StandardOpenOption.CREATE;
 
@@ -24,46 +23,109 @@ public class CheckManager {
         this.manifestFolder = manifestFolder;
     }
 
-    public void checkIn(Path source) {
+    /**
+     * Used to either create a repo that doesn't already exist or to check in an existing repo
+     *
+     * @param source
+     * @param target
+     */
+    public void checkIn(Path source, Path target) {
         // Get current datetime
         LocalDateTime dateTime = LocalDateTime.now();
 
         // Get manifest file path
-        Path manifestFile = manifestFolder.resolve(dateTime.toString());
+        Path manifestFile = manifestFolder.resolve(dateTime.toString().replace(':', '.'));
 
         // Write source tree to file
-        try (OutputStream out = new BufferedOutputStream(
+        // Create new manifest file
+        try (OutputStream output = new BufferedOutputStream(
                 Files.newOutputStream(manifestFile, CREATE, APPEND))) {
-            // Create new manifest file
-            Files.createFile(manifestFile);
-
             // Walk through tree adding files
+
             Files.walkFileTree(source, new FileVisitor<Path>() {
+                byte data[];
+                long aid;
+
                 @Override
-                public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) throws IOException {
+                public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) {
+                    // Create the directory if it doesn't already exist
+                    Path newDir = target.resolve(source.relativize(dir));
+
+                    try {
+                        // FIXME: prevent recursion
+                        System.out.format("Creating dir: %s%n", newDir);
+                        Files.createDirectory(newDir);
+
+                        // Copy directory to the manifest
+                        data = String.format("%s%n", dir.toString()).getBytes();
+                        output.write(data, 0, data.length);
+                    } catch (FileAlreadyExistsException e) {
+                        // ignore
+                        System.err.format("Skipping already existing directory: %s%n", newDir);
+                    } catch (IOException e) {
+                        System.err.format("Unable to copy folder: %s: %s%n", newDir, e);
+                        return SKIP_SUBTREE;
+                    }
+
                     return CONTINUE;
                 }
 
                 @Override
-                public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
-                    out.write(file.toString().getBytes());
-                    // TODO: calculate AID and add to end of the line
-                    // TODO: create an artifact within the folder in the repo for that file
+                public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) {
+                    // Removes extension
+                    String nameNoExt = file.getFileName().toString().split("\\.")[0];
+                    Path newDir = target.resolve(source.relativize(file.getParent())).resolve(nameNoExt);
+
+                    // Creates a directory for the file
+                    try {
+                        if (Files.notExists(newDir.getParent()))
+                            Files.createDirectory(newDir.getParent());
+
+                        Files.createDirectory(newDir);
+                    } catch (FileAlreadyExistsException e) {
+                        System.err.format("Skipping already existing file: %s%n", newDir);
+                    } catch (IOException e) {
+                        System.err.format("Unable to create folder: %s: %s%n", newDir, e);
+                    }
+
+                    // Copy file through createAID() and write file name with it's AID in manifest
+                    try {
+                        aid = Files.size(file) % 255;
+
+                        data = file.toString().getBytes();
+                        output.write(data, 0, data.length);
+
+                        Path aidFile = newDir.resolve(aid + "");
+                        Files.copy(file, aidFile, REPLACE_EXISTING);
+
+                        data = String.format(" %d%n", aid).getBytes();
+                        output.write(data, 0, data.length);
+                    } catch (FileAlreadyExistsException e) {
+                        System.out.format("File already exists: %s%n", file);
+                    } catch (IOException e) {
+                        System.out.format("Error writing to file: %s%n", file);
+                    }
+
                     return CONTINUE;
                 }
 
                 @Override
-                public FileVisitResult visitFileFailed(Path file, IOException exc) throws IOException {
-                    System.err.println(exc);
+                public FileVisitResult visitFileFailed(Path file, IOException exc) {
+                    if (exc instanceof FileSystemLoopException) {
+                        System.err.println("cycle detected: " + file);
+                    } else {
+                        System.err.format("Unable to copy: %s: %s%n", file, exc);
+                    }
                     return CONTINUE;
                 }
 
                 @Override
-                public FileVisitResult postVisitDirectory(Path dir, IOException exc) throws IOException {
-                    System.out.format("Directory: %s%n", dir);
+                public FileVisitResult postVisitDirectory(Path dir, IOException exc) {
                     return CONTINUE;
                 }
             });
+
+            output.close();
         } catch (IOException e) {
             System.err.format("Error writing manifest: %s, %s%n", manifestFile, e);
         }
@@ -92,7 +154,6 @@ public class CheckManager {
         }
     }
 
-
     /**
      * Copy file from source file in repo to destination folder in check out 	 * Check out
      *
@@ -120,88 +181,6 @@ public class CheckManager {
         // save path of each file into arraylist al_OriginalFile
         // al_OriginalFile.add(sourceLocation.getPath());
     }
-
-    /**
-     * Build manifest file to save the history of work
-     *
-     * @param manifestFolder
-     * @throws IOException
-     */
-    public void buildManifest(File manifestFolder) throws IOException {
-
-        // get current datetime
-        Date dNow = new Date();
-        SimpleDateFormat ft = new SimpleDateFormat("yyyy.MM.dd.hh.mm.ss");
-        String timestand = ft.format(dNow);
-
-        // create manifest file with its name is timestand
-        File manifest = new File(manifestFolder, timestand);
-
-        // write arraylist to manifest file(named by timestand)
-        FileWriter writer = new FileWriter(manifest);
-
-        /**
-         Iterator itr = al_File.iterator();
-         while (itr.hasNext()) {
-         writer.write(itr.next() + System.getProperty("line.separator"));
-         }
-
-         writer.close();
-
-         // clear Arraylist to make it empty for the next check in
-         al_File.clear();
-         al_OriginalFile.clear();
-         */
-    }
-
-
-    /**
-     * build manifest file for checking in
-     *
-     * @param srcFolderPath
-     * @param CheckInFolder
-     * @throws IOException
-     */
-    public void buildCheckInManifest(String srcFolderPath, File CheckInFolder) throws IOException {
-
-        // get current datetime
-        Date dNow = new Date();
-        SimpleDateFormat ft = new SimpleDateFormat("yyyy.MM.dd.hh.mm.ss");
-        String timestand = ft.format(dNow);
-
-        // create manifest file inside checkin folder with its name is timestand
-        File manifestFile = new File(CheckInFolder, timestand);
-
-        // FileWriter object to write man-line to file
-        FileWriter writer = new FileWriter(manifestFile);
-
-        // write parent folder to file
-        writer.write(srcFolderPath + System.getProperty("line.separator"));
-        /**
-         al_OriginalFile.add(0, srcFolderPath);
-
-         // write arraylist of original files to manifest file(named by timestand)
-         Iterator itr1 = al_OriginalFile.iterator();
-
-         while (itr1.hasNext()) {
-         // write line by line
-         writer.write(itr1.next() + System.getProperty("line.separator"));
-         }
-
-         // write arraylist to manifest file(named by timestand)
-         Iterator itr = al_File.iterator();
-         while (itr.hasNext()) {
-         writer.write(itr.next() + System.getProperty("line.separator"));
-         }
-
-         writer.close();
-
-         // clear Arraylist to make it empty for the next check in
-         al_File.clear();
-         al_OriginalFile.clear();
-         */
-    }
-
 
     /**
      * build manifest file for checking out

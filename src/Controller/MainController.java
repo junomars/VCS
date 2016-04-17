@@ -1,7 +1,6 @@
 package Controller;
 
 import Model.CheckManager;
-import Model.TreeCopier;
 import javafx.event.Event;
 import javafx.fxml.FXML;
 import javafx.scene.control.Button;
@@ -93,23 +92,22 @@ public class MainController {
         // Create our directory if it doesn't already exist
         // consider: prompt user if the folder already exists?
         try {
-            if (!Files.exists(repoPath)) {
+            if (Files.notExists(repoPath)) {
                 Files.createDirectory(repoPath);
                 repoPath = repoPath.resolve(source.getFileName());
                 Files.createDirectory(repoPath);
             }
 
-            // Copy the folders and files
-            TreeCopier tc = new TreeCopier(source, repoPath);
-            Files.walkFileTree(source, tc);
-
             // Create a folder for the manifests
             manifest = repoPath.resolve("manifests");
-            Files.createDirectory(manifest);
+            if (Files.notExists(manifest))
+                Files.createDirectory(manifest);
 
-            // Create manifest file for initial check in
-            checkManager = new CheckManager(manifest);
-            checkManager.checkIn(repoPath);
+            // Check in (by creating repo in this case)
+            CheckManager cm = new CheckManager(manifest);
+            cm.checkIn(source, repoPath);
+
+            System.out.println("Repository successfully created.");
         } catch (IOException e) {
             System.err.format("Error creating repository: %s, %sn", repoPath, e);
         }
