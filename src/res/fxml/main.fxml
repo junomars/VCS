@@ -3,9 +3,8 @@
 <?import javafx.geometry.Insets?>
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
-<Accordion xmlns:fx="http://javafx.com/fxml/1" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity"
-           minWidth="-Infinity"
-           prefHeight="400.0" prefWidth="600.0" xmlns="http://javafx.com/javafx/8.0.65"
+<Accordion maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="400.0"
+           prefWidth="600.0" xmlns="http://javafx.com/javafx/8.0.40" xmlns:fx="http://javafx.com/fxml/1"
            fx:controller="Controller.MainController">
     <panes>
         <TitledPane animated="false" text="Create Repo">
@@ -30,19 +29,19 @@
                             </rowConstraints>
                             <children>
                                 <Label text="Source folder:"/>
-                                <Label text="Target folder:" GridPane.rowIndex="1"/>
-                                <Label text="Repository name:" GridPane.rowIndex="2"/>
-                                <Button fx:id="selectSource" mnemonicParsing="false" onMouseClicked="#chooseDirectory"
-                                        text="Browse..." GridPane.columnIndex="2" GridPane.halignment="RIGHT"/>
-                                <Button fx:id="selectTarget" mnemonicParsing="false" onMouseClicked="#chooseDirectory"
-                                        text="Browse..." GridPane.columnIndex="2" GridPane.halignment="RIGHT"
-                                        GridPane.rowIndex="1"/>
-                                <TextField fx:id="sourceField" promptText="Source folder path, e.g. C:\Users\..."
-                                           GridPane.columnIndex="1"/>
-                                <TextField fx:id="targetField" promptText="Target folder path, e.g. C:\Users\..."
-                                           GridPane.columnIndex="1" GridPane.rowIndex="1"/>
-                                <TextField fx:id="repoNameField" promptText="Enter an optional name"
-                                           GridPane.columnIndex="1" GridPane.rowIndex="2"/>
+                                <Label GridPane.rowIndex="1" text="Target folder:"/>
+                                <Label GridPane.rowIndex="2" text="Repository name:"/>
+                                <Button GridPane.columnIndex="2" GridPane.halignment="RIGHT" mnemonicParsing="false"
+                                        onMouseClicked="#chooseDirectory" text="Browse..." fx:id="selectSource"/>
+                                <Button GridPane.columnIndex="2" GridPane.halignment="RIGHT" GridPane.rowIndex="1"
+                                        mnemonicParsing="false" onMouseClicked="#chooseDirectory" text="Browse..."
+                                        fx:id="selectTarget"/>
+                                <TextField GridPane.columnIndex="1" promptText="Source folder path, e.g. C:\Users\..."
+                                           fx:id="sourceField"/>
+                                <TextField GridPane.columnIndex="1" GridPane.rowIndex="1"
+                                           promptText="Target folder path, e.g. C:\Users\..." fx:id="targetField"/>
+                                <TextField GridPane.columnIndex="1" GridPane.rowIndex="2"
+                                           promptText="Enter an optional name" fx:id="repoNameField"/>
                             </children>
                             <BorderPane.margin>
                                 <Insets bottom="5.0" left="5.0" right="5.0" top="5.0"/>
@@ -50,9 +49,57 @@
                         </GridPane>
                     </center>
                     <bottom>
-                        <Button fx:id="createRepo" mnemonicParsing="false" onMouseClicked="#createRepo"
-                                text="Create Repository" BorderPane.alignment="CENTER"/>
+                        <Button BorderPane.alignment="CENTER" mnemonicParsing="false" onMouseClicked="#createRepo"
+                                text="Create Repository" fx:id="createRepo"/>
                     </bottom>
+                </BorderPane>
+            </content>
+        </TitledPane>
+        <TitledPane animated="false" expanded="false" text="Check In">
+            <content>
+                <BorderPane minHeight="250.0" minWidth="400.0">
+                    <center>
+                        <GridPane hgap="10.0" vgap="10.0">
+                            <columnConstraints>
+                                <ColumnConstraints hgrow="SOMETIMES" minWidth="10.0" percentWidth="15.0"
+                                                   prefWidth="100.0"/>
+                                <ColumnConstraints hgrow="SOMETIMES" minWidth="10.0" prefWidth="100.0"/>
+                                <ColumnConstraints hgrow="SOMETIMES" minWidth="10.0" percentWidth="15.0"
+                                                   prefWidth="100.0"/>
+                            </columnConstraints>
+                            <rowConstraints>
+                                <RowConstraints minHeight="10.0" percentHeight="30.0" prefHeight="30.0"
+                                                vgrow="SOMETIMES"/>
+                                <RowConstraints minHeight="10.0" percentHeight="30.0" prefHeight="30.0"
+                                                vgrow="SOMETIMES"/>
+                                <RowConstraints minHeight="10.0" percentHeight="30.0" prefHeight="30.0"
+                                                vgrow="SOMETIMES"/>
+                                <RowConstraints minHeight="10.0" percentHeight="10.0" prefHeight="30.0"
+                                                vgrow="SOMETIMES"/>
+                            </rowConstraints>
+                            <children>
+                                <Label text="Name:"/>
+                                <Label GridPane.rowIndex="1" text="Location:"/>
+                                <Label GridPane.rowIndex="2" text="Source:"/>
+                                <Button GridPane.columnSpan="2147483647" GridPane.halignment="CENTER"
+                                        GridPane.rowIndex="3"
+                                        mnemonicParsing="false" onMouseClicked="#createRepo"
+                                        text="Check In Repository" fx:id="checkIn"/>
+                                <Label GridPane.columnIndex="1" GridPane.columnSpan="2147483647" text="Label"
+                                       fx:id="repoName"/>
+                                <Label GridPane.columnIndex="1" GridPane.columnSpan="2147483647" GridPane.rowIndex="1"
+                                       text="Label" fx:id="repoLocation"/>
+                                <Label GridPane.columnIndex="1" GridPane.columnSpan="2147483647" GridPane.rowIndex="2"
+                                       text="Label" fx:id="sourceLocation"/>
+                            </children>
+                            <BorderPane.margin>
+                                <Insets bottom="5.0" left="5.0" right="5.0" top="5.0"/>
+                            </BorderPane.margin>
+                        </GridPane>
+                    </center>
+                    <left>
+                        <ListView BorderPane.alignment="CENTER_LEFT" prefWidth="200.0" fx:id="repoList"/>
+                    </left>
                 </BorderPane>
             </content>
         </TitledPane>
