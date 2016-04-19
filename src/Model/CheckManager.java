@@ -17,12 +17,6 @@ import static java.nio.file.StandardOpenOption.CREATE;
  * Created by jonat on 4/16/2016.
  */
 public class CheckManager {
-    private final Path manifestFolder;
-
-    public CheckManager(Path manifestFolder) {
-        this.manifestFolder = manifestFolder;
-    }
-
     /**
      * Used to either create a repo that doesn't already exist or to check in an existing repo
      *
@@ -30,21 +24,35 @@ public class CheckManager {
      * @param target
      */
     public void checkIn(Path source, Path target) {
+        Path manifestFolder;
+        Path manifestFile;
+        LocalDateTime dateTime;
+        final String fileFormat = "%s%3s %s %d%n"; // depth, attributes, path, aid
+
         // Get current datetime
-        LocalDateTime dateTime = LocalDateTime.now();
+        dateTime = LocalDateTime.now();
 
-        // Get manifest file path
-        Path manifestFile = manifestFolder.resolve(dateTime.toString().replace(':', '.'));
+        // Create a folder for the manifests if it doesn't already exist
+        manifestFolder = target.resolve("manifests");
+        if (Files.notExists(manifestFolder))
+            try {
+                Files.createDirectory(manifestFolder);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
 
-        // Write source tree to file
-        // Create new manifest file
+        // Create our manifest file
+        manifestFile = manifestFolder.resolve(dateTime.toString().replace(':', '.'));
+
+        // Create new manifest file with try with resource
         try (OutputStream output = new BufferedOutputStream(
                 Files.newOutputStream(manifestFile, CREATE, APPEND))) {
             // Walk through tree adding files
-
             Files.walkFileTree(source, new FileVisitor<Path>() {
-                byte data[];
-                long aid;
+                int checksum;
+                byte walkData[];
+                String depth = "";
+                String fileProperties = "";
 
                 @Override
                 public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) {
@@ -53,55 +61,60 @@ public class CheckManager {
 
                     try {
                         // FIXME: prevent recursion
-                        System.out.format("Creating dir: %s%n", newDir);
-                        Files.createDirectory(newDir);
+                        if (Files.notExists(newDir))
+                            Files.createDirectory(newDir);
 
                         // Copy directory to the manifest
-                        data = String.format("%s%n", dir.toString()).getBytes();
-                        output.write(data, 0, data.length);
-                    } catch (FileAlreadyExistsException e) {
-                        // ignore
-                        System.err.format("Skipping already existing directory: %s%n", newDir);
+                        walkData = String.format("%s%s/%n", depth, newDir.getFileName().toString()).getBytes();
+                        output.write(walkData, 0, walkData.length);
                     } catch (IOException e) {
                         System.err.format("Unable to copy folder: %s: %s%n", newDir, e);
                         return SKIP_SUBTREE;
                     }
 
+                    depth += "    ";
                     return CONTINUE;
                 }
 
                 @Override
                 public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) {
+                    fileProperties = "";
                     // Removes extension
                     String nameNoExt = file.getFileName().toString().split("\\.")[0];
+                    String ext = file.getFileName().toString().replaceAll(nameNoExt, "");
                     Path newDir = target.resolve(source.relativize(file.getParent())).resolve(nameNoExt);
 
                     // Creates a directory for the file
                     try {
-                        if (Files.notExists(newDir.getParent()))
-                            Files.createDirectory(newDir.getParent());
-
-                        Files.createDirectory(newDir);
-                    } catch (FileAlreadyExistsException e) {
-                        System.err.format("Skipping already existing file: %s%n", newDir);
+                        if (Files.notExists(newDir))
+                            Files.createDirectory(newDir);
                     } catch (IOException e) {
                         System.err.format("Unable to create folder: %s: %s%n", newDir, e);
                     }
 
                     // Copy file through createAID() and write file name with it's AID in manifest
                     try {
-                        aid = Files.size(file) % 255;
+                        // Read file contents to create checksum
+                        checksum = 0;
+                        int readChar;
 
-                        data = file.toString().getBytes();
-                        output.write(data, 0, data.length);
+                        InputStream fileStream = Files.newInputStream(file);
+                        while ((readChar = fileStream.read()) != -1) {
+                            checksum += readChar;
+                        }
 
-                        Path aidFile = newDir.resolve(aid + "");
+                        // Create our file
+                        Path aidFile = newDir.resolve(checksum + ext);
                         Files.copy(file, aidFile, REPLACE_EXISTING);
 
-                        data = String.format(" %d%n", aid).getBytes();
-                        output.write(data, 0, data.length);
-                    } catch (FileAlreadyExistsException e) {
-                        System.out.format("File already exists: %s%n", file);
+                        // Adding file properties
+                        fileProperties += Files.isReadable(file) ? 'R' : '_';
+                        fileProperties += Files.isWritable(file) ? 'W' : '_';
+                        fileProperties += Files.isExecutable(file) ? 'E' : '_';
+
+                        // Create our line and write
+                        walkData = String.format(fileFormat, depth, fileProperties, file.getFileName().toString(), checksum).getBytes();
+                        output.write(walkData, 0, walkData.length);
                     } catch (IOException e) {
                         System.out.format("Error writing to file: %s%n", file);
                     }
@@ -121,6 +134,7 @@ public class CheckManager {
 
                 @Override
                 public FileVisitResult postVisitDirectory(Path dir, IOException exc) {
+                    depth = depth.substring(0, depth.length() - 4);
                     return CONTINUE;
                 }
             });

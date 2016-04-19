@@ -29,15 +29,15 @@ public class MainController {
      * FXML Objects
      */
     @FXML
-    private TextField sourceField;
+    private TextField createSource;
     @FXML
-    private TextField targetField;
+    private TextField createTarget;
     @FXML
     private TextField repoNameField;
     @FXML
-    private Button selectSource;
+    private Button selectCreateSource;
     @FXML
-    private Button selectTarget;
+    private Button selectCreateTarget;
     @FXML
     private Button createRepo;
 
@@ -47,19 +47,19 @@ public class MainController {
      * @param event the event identifies the source object
      */
     public void chooseDirectory(Event event) {
-        if (event.getSource().equals(selectTarget)) {
+        if (event.getSource().equals(selectCreateTarget)) {
             directoryChooser.setTitle("Select target directory");
-        } else if (event.getSource().equals(selectSource)) {
+        } else if (event.getSource().equals(selectCreateSource)) {
             directoryChooser.setTitle("Select source directory");
         }
 
         File directory = directoryChooser.showDialog(new Stage());
 
         if (directory != null) {
-            if (event.getSource().equals(selectTarget)) {
-                targetField.setText(directory.getPath());
-            } else if (event.getSource().equals(selectSource)) {
-                sourceField.setText(directory.getPath());
+            if (event.getSource().equals(selectCreateTarget)) {
+                createTarget.setText(directory.getPath());
+            } else if (event.getSource().equals(selectCreateSource)) {
+                createSource.setText(directory.getPath());
             }
         }
     }
@@ -77,11 +77,10 @@ public class MainController {
          *      directory
          * FIXME: Don't allow recursion
          */
-        Path manifest;
         Path repoPath;
         String repoName = repoNameField.getText();
-        Path source = Paths.get(sourceField.getText());
-        Path target = Paths.get(targetField.getText());
+        Path source = Paths.get(createSource.getText());
+        Path target = Paths.get(createTarget.getText());
 
         if (repoName.isEmpty()) {
             repoPath = target.resolve(source.getFileName() + "_repo343");
@@ -92,19 +91,12 @@ public class MainController {
         // Create our directory if it doesn't already exist
         // consider: prompt user if the folder already exists?
         try {
-            if (Files.notExists(repoPath)) {
-                Files.createDirectory(repoPath);
-                repoPath = repoPath.resolve(source.getFileName());
-                Files.createDirectory(repoPath);
-            }
-
-            // Create a folder for the manifests
-            manifest = repoPath.resolve("manifests");
-            if (Files.notExists(manifest))
-                Files.createDirectory(manifest);
+            Files.createDirectory(repoPath);
+            repoPath = repoPath.resolve(source.getFileName());
+            Files.createDirectory(repoPath);
 
             // Check in (by creating repo in this case)
-            CheckManager cm = new CheckManager(manifest);
+            CheckManager cm = new CheckManager();
             cm.checkIn(source, repoPath);
 
             System.out.println("Repository successfully created.");
