@@ -48,6 +48,10 @@ public class MainController {
     @FXML
     private TextField checkoutTo;
     @FXML
+    private TextField mergeFrom;
+    @FXML
+    private TextField mergeTo;
+    @FXML
     private Button selectCreateFrom;
     @FXML
     private Button selectCreateTo;
@@ -59,16 +63,24 @@ public class MainController {
     private Button selectCheckoutFrom;
     @FXML
     private Button selectCheckoutTo;
+    @FXML
+    private Button selectMergeFrom;
+    @FXML
+    private Button selectMergeTo;
 
     public void chooseFile(Event event) {
-        if (event.getSource().equals(selectCheckoutTo)) {
+        if (event.getSource().equals(selectCheckoutFrom) || event.getSource().equals(selectMergeFrom)) {
             fileChooser.setTitle("Select manifest file");
         }
 
         File file = fileChooser.showOpenDialog(new Stage());
 
         if (file != null) {
-            checkoutFrom.setText(file.getPath());
+            if (event.getSource().equals(selectCheckoutFrom)) {
+                checkoutFrom.setText(file.getPath());
+            } else if (event.getSource().equals(selectMergeFrom)) {
+                mergeFrom.setText(file.getPath());
+            }
         }
     }
 
@@ -78,7 +90,10 @@ public class MainController {
      * @param event the event identifies the source object
      */
     public void chooseDirectory(Event event) {
-        if (event.getSource().equals(selectCreateTo) || event.getSource().equals(selectCheckinTo) || event.getSource().equals(selectCheckoutFrom)) {
+        if (event.getSource().equals(selectCreateTo) ||
+                event.getSource().equals(selectCheckinTo) ||
+                event.getSource().equals(selectCheckoutTo) ||
+                event.getSource().equals(selectMergeTo)) {
             directoryChooser.setTitle("Select target directory");
         } else if (event.getSource().equals(selectCreateFrom) || event.getSource().equals(selectCheckinFrom)) {
             directoryChooser.setTitle("Select source directory");
@@ -97,6 +112,8 @@ public class MainController {
                 checkinFrom.setText(directory.getPath());
             } else if (event.getSource().equals(selectCheckoutTo)) {
                 checkoutTo.setText(directory.getPath());
+            } else if (event.getSource().equals(selectMergeTo)) {
+                mergeTo.setText(directory.getPath());
             }
         }
     }
@@ -160,5 +177,13 @@ public class MainController {
 
         repositoryManager.checkOut(manifest, target);
         System.out.println("Repository successfully checked out.");
+    }
+
+    public void merge(Event event) {
+        Path target = Paths.get(mergeTo.getText());
+        Path manifest = Paths.get(mergeFrom.getText());
+
+        repositoryManager.merge(manifest, target);
+        System.out.println("Repository successfully merged.");
     }
 }

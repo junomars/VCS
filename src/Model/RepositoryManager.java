@@ -109,7 +109,7 @@ public class RepositoryManager {
                         // We have a file with an AID
                         // Delete current directory and make it into a file with contents from current path
                         String[] paths = line.trim().split(" ");
-                        Files.copy(fileToCopy.resolve(paths[1]).resolve(paths[2]), target.resolve(paths[1]));
+                        Files.copy(fileToCopy.resolve(paths[1]).resolve(paths[2]), target.resolve(paths[1]), REPLACE_EXISTING);
                     } else {
                         // We have a directory
                         currDepth = 0;
@@ -153,6 +153,10 @@ public class RepositoryManager {
             System.err.format("Error writing manifest: %s, %s%n", newManifestFile, e);
             e.printStackTrace();
         }
+    }
+
+    public void merge(Path manifestFile, Path target) {
+
     }
 
     private static class CopyTreeVisitor implements FileVisitor<Path> {
