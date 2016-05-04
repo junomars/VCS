@@ -7,6 +7,9 @@ import java.io.OutputStream;
 import java.nio.file.*;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Iterator;
 import java.util.NoSuchElementException;
 
 import static java.nio.file.FileVisitResult.CONTINUE;
@@ -64,6 +67,9 @@ public class RepositoryManager {
                 output.write(String.format("%nParent file: %n%s%n", parentFile.toString()).getBytes());
             }
 
+            // Enter project location
+            output.write(String.format("%nProject File Location: %n%s%n", source.toString()).getBytes());
+
             // Enter time stamp
             output.write(String.format("%nDate and time written:%n%s%n", dt.toString()).getBytes());
 
@@ -92,7 +98,7 @@ public class RepositoryManager {
             int currDepth;
             boolean tree = true;
             for (String line : Files.readAllLines(manifestFile)) {
-                if (line.contains("Date and time written")) {
+                if (line.contains("Parent File:")) {
                     break;
                 }
 
@@ -144,6 +150,12 @@ public class RepositoryManager {
                 }
             }
 
+            // Enter parent
+            output.write(String.format("Parent File: %n%s%n", manifestFile).getBytes());
+
+            // Enter project location
+            output.write(String.format("%nProject File Location: %n%s%n", target).getBytes());
+
             // Enter time stamp
             output.write(String.format("%nDate and time written:%n%s%n", dt.toString()).getBytes());
 
@@ -155,8 +167,42 @@ public class RepositoryManager {
         }
     }
 
-    public void merge(Path manifestFile, Path target) {
+    public void merge(Path repoManifest, Path target) {
+        Path treeManifest;
+        Path base = null;
 
+        // Get target manifest
+        try {
+            // Iterate through all the files in the manifest folder to find possible manifest
+            ArrayList<Path> manifests = new ArrayList<>();
+            Iterator<Path> iter = Files.list(repoManifest.getParent()).iterator();
+            while (iter.hasNext()) {
+                treeManifest = iter.next();
+                if (Files.lines(treeManifest).anyMatch(target.toString()::equals)) {
+                    manifests.add(treeManifest);
+                }
+            }
+
+            // Find the first check in within the manifests (i.e. the check out manifest that started it all)
+            Collections.sort(manifests);
+            Iterator<String> lines = Files.readAllLines(manifests.get(0)).iterator();
+            String debug;
+            while (lines.hasNext()) {
+                debug = lines.next();
+                if (debug.contains("Parent File:")) {
+                    System.out.format("-%s-%n", debug);
+                    break;
+                }
+            }
+            base = Paths.get(lines.next());
+
+            // Find the last check in, this is our mergeFrom manifest
+            treeManifest = manifests.get(manifests.size() - 1);
+
+            System.out.printf("repo: %s%ntree: %s%ngramps: %s%nat: %s%n", repoManifest, treeManifest, base, target);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
     private static class CopyTreeVisitor implements FileVisitor<Path> {
