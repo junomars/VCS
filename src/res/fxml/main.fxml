@@ -3,11 +3,11 @@
 <?import javafx.geometry.*?>
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
-<BorderPane prefHeight="375.0" prefWidth="600.0" xmlns="http://javafx.com/javafx/8.0.40"
-            xmlns:fx="http://javafx.com/fxml/1" fx:controller="Controller.MainController">
+<BorderPane xmlns:fx="http://javafx.com/fxml/1" prefHeight="375.0" prefWidth="600.0"
+            xmlns="http://javafx.com/javafx/8.0.65" fx:controller="Controller.MainController">
     <center>
-        <TabPane BorderPane.alignment="CENTER" prefHeight="200.0" prefWidth="200.0" tabClosingPolicy="UNAVAILABLE">
-            <Tab text="Create Repo">
+        <TabPane prefHeight="200.0" prefWidth="200.0" tabClosingPolicy="UNAVAILABLE" BorderPane.alignment="CENTER">
+            <Tab text="%create">
                 <BorderPane minHeight="250.0" minWidth="400.0">
                     <center>
                         <GridPane hgap="10.0" vgap="10.0">
@@ -29,32 +29,29 @@
                             <BorderPane.margin>
                                 <Insets bottom="5.0" left="5.0" right="5.0" top="5.0"/>
                             </BorderPane.margin>
-                            <Label text="Source folder:"/>
-                            <Label GridPane.rowIndex="1" text="Target folder:"/>
-                            <Label GridPane.rowIndex="2" text="Repository name:"/>
-                            <Button GridPane.columnIndex="2" GridPane.halignment="RIGHT" mnemonicParsing="false"
-                                    onMouseClicked="#chooseDirectory" text="Browse..." fx:id="selectCreateFrom"/>
-                            <Button GridPane.columnIndex="2" GridPane.halignment="RIGHT" GridPane.rowIndex="1"
-                                    mnemonicParsing="false" onMouseClicked="#chooseDirectory" text="Browse..."
-                                    fx:id="selectCreateTo"/>
-                            <TextField GridPane.columnIndex="1" promptText="Source folder path, e.g. C:\Users\..."
-                                       fx:id="createFrom"/>
-                            <TextField GridPane.columnIndex="1" GridPane.rowIndex="1"
-                                       promptText="Target folder path, e.g. C:\Users\..." fx:id="createTo"/>
-                            <TextField GridPane.columnIndex="1" GridPane.rowIndex="2"
-                                       promptText="Enter an optional name" fx:id="repoNameField"/>
+                            <Label text="%sourceDir"/>
+                            <Label text="%targetDir" GridPane.rowIndex="1"/>
+                            <Label text="%repoName" GridPane.rowIndex="2"/>
+                            <Button fx:id="selectCreateFrom" mnemonicParsing="false" onMouseClicked="#chooseDirectory"
+                                    text="%browse" GridPane.columnIndex="2" GridPane.halignment="RIGHT"/>
+                            <Button fx:id="selectCreateTo" mnemonicParsing="false" onMouseClicked="#chooseDirectory"
+                                    text="%browse" GridPane.columnIndex="2" GridPane.halignment="RIGHT"
+                                    GridPane.rowIndex="1"/>
+                            <TextField fx:id="createFrom" GridPane.columnIndex="1"/>
+                            <TextField fx:id="createTo" GridPane.columnIndex="1" GridPane.rowIndex="1"/>
+                            <TextField fx:id="repoNameField" GridPane.columnIndex="1" GridPane.rowIndex="2"/>
                         </GridPane>
                     </center>
                     <bottom>
-                        <Button BorderPane.alignment="CENTER" mnemonicParsing="false" onMouseClicked="#createRepo"
-                                text="Create Repository" fx:id="createRepo"/>
+                        <Button fx:id="createRepo" mnemonicParsing="false" onMouseClicked="#createRepo" text="%create"
+                                BorderPane.alignment="CENTER"/>
                     </bottom>
                     <padding>
                         <Insets bottom="10.0" left="10.0" right="10.0" top="10.0"/>
                     </padding>
                 </BorderPane>
             </Tab>
-            <Tab text="Check In">
+            <Tab text="%checkin">
                 <BorderPane minHeight="250.0" minWidth="400.0">
                     <center>
                         <GridPane hgap="10.0" vgap="10.0">
@@ -76,29 +73,27 @@
                             <BorderPane.margin>
                                 <Insets bottom="5.0" left="5.0" right="5.0" top="5.0"/>
                             </BorderPane.margin>
-                            <Label text="Source folder:"/>
-                            <Label GridPane.rowIndex="1" text="Repository folder:"/>
-                            <Button GridPane.columnIndex="2" GridPane.halignment="RIGHT" mnemonicParsing="false"
-                                    onMouseClicked="#chooseDirectory" text="Browse..." fx:id="selectCheckinFrom"/>
-                            <Button GridPane.columnIndex="2" GridPane.halignment="RIGHT" GridPane.rowIndex="1"
-                                    mnemonicParsing="false" onMouseClicked="#chooseDirectory" text="Browse..."
-                                    fx:id="selectCheckinTo"/>
-                            <TextField GridPane.columnIndex="1" promptText="Source folder path, e.g. C:\Users\..."
-                                       fx:id="checkinFrom"/>
-                            <TextField GridPane.columnIndex="1" GridPane.rowIndex="1"
-                                       promptText="Target folder path, e.g. C:\Users\..." fx:id="checkinTo"/>
+                            <Label text="%sourceDir"/>
+                            <Label text="%repoDir" GridPane.rowIndex="1"/>
+                            <Button fx:id="selectCheckinFrom" mnemonicParsing="false" onMouseClicked="#chooseDirectory"
+                                    text="%browse" GridPane.columnIndex="2" GridPane.halignment="RIGHT"/>
+                            <Button fx:id="selectCheckinTo" mnemonicParsing="false" onMouseClicked="#chooseDirectory"
+                                    text="%browse" GridPane.columnIndex="2" GridPane.halignment="RIGHT"
+                                    GridPane.rowIndex="1"/>
+                            <TextField fx:id="checkinFrom" GridPane.columnIndex="1"/>
+                            <TextField fx:id="checkinTo" GridPane.columnIndex="1" GridPane.rowIndex="1"/>
                         </GridPane>
                     </center>
                     <bottom>
-                        <Button BorderPane.alignment="CENTER" mnemonicParsing="false" onMouseClicked="#checkinRepo"
-                                text="Check In Repository"/>
+                        <Button mnemonicParsing="false" onMouseClicked="#checkinRepo" text="%checkin"
+                                BorderPane.alignment="CENTER"/>
                     </bottom>
                     <padding>
                         <Insets bottom="10.0" left="10.0" right="10.0" top="10.0"/>
                     </padding>
                 </BorderPane>
             </Tab>
-            <Tab text="Check Out">
+            <Tab text="%checkout">
                 <BorderPane minHeight="250.0" minWidth="400.0">
                     <center>
                         <GridPane hgap="10.0" vgap="10.0">
@@ -120,29 +115,27 @@
                             <BorderPane.margin>
                                 <Insets bottom="5.0" left="5.0" right="5.0" top="5.0"/>
                             </BorderPane.margin>
-                            <Label text="Manifest file:"/>
-                            <Label GridPane.rowIndex="1" text="Target folder:"/>
-                            <Button GridPane.columnIndex="2" GridPane.halignment="RIGHT" mnemonicParsing="false"
-                                    onMouseClicked="#chooseFile" text="Browse..." fx:id="selectCheckoutFrom"/>
-                            <Button GridPane.columnIndex="2" GridPane.halignment="RIGHT" GridPane.rowIndex="1"
-                                    mnemonicParsing="false" onMouseClicked="#chooseDirectory" text="Browse..."
-                                    fx:id="selectCheckoutTo"/>
-                            <TextField GridPane.columnIndex="1" promptText="Source folder path, e.g. C:\Users\..."
-                                       fx:id="checkoutFrom"/>
-                            <TextField GridPane.columnIndex="1" GridPane.rowIndex="1"
-                                       promptText="Target folder path, e.g. C:\Users\..." fx:id="checkoutTo"/>
+                            <Label text="%manifestFile"/>
+                            <Label text="%targetDir" GridPane.rowIndex="1"/>
+                            <Button fx:id="selectCheckoutFrom" mnemonicParsing="false" onMouseClicked="#chooseFile"
+                                    text="%browse" GridPane.columnIndex="2" GridPane.halignment="RIGHT"/>
+                            <Button fx:id="selectCheckoutTo" mnemonicParsing="false" onMouseClicked="#chooseDirectory"
+                                    text="%browse" GridPane.columnIndex="2" GridPane.halignment="RIGHT"
+                                    GridPane.rowIndex="1"/>
+                            <TextField fx:id="checkoutFrom" GridPane.columnIndex="1"/>
+                            <TextField fx:id="checkoutTo" GridPane.columnIndex="1" GridPane.rowIndex="1"/>
                         </GridPane>
                     </center>
                     <bottom>
-                        <Button BorderPane.alignment="CENTER" mnemonicParsing="false" onMouseClicked="#checkoutRepo"
-                                text="Check Out Repository"/>
+                        <Button mnemonicParsing="false" onMouseClicked="#checkoutRepo" text="%checkout"
+                                BorderPane.alignment="CENTER"/>
                     </bottom>
                     <padding>
                         <Insets bottom="10.0" left="10.0" right="10.0" top="10.0"/>
                     </padding>
                 </BorderPane>
             </Tab>
-            <Tab text="Merge">
+            <Tab text="%merge">
                 <BorderPane minHeight="250.0" minWidth="400.0">
                     <center>
                         <GridPane hgap="10.0" vgap="10.0">
@@ -164,22 +157,20 @@
                             <BorderPane.margin>
                                 <Insets bottom="5.0" left="5.0" right="5.0" top="5.0"/>
                             </BorderPane.margin>
-                            <Label text="Manifest file:"/>
-                            <Label GridPane.rowIndex="1" text="Target folder:"/>
-                            <Button GridPane.columnIndex="2" GridPane.halignment="RIGHT" mnemonicParsing="false"
-                                    onMouseClicked="#chooseFile" text="Browse..." fx:id="selectMergeFrom"/>
-                            <Button GridPane.columnIndex="2" GridPane.halignment="RIGHT" GridPane.rowIndex="1"
-                                    mnemonicParsing="false" onMouseClicked="#chooseDirectory" text="Browse..."
-                                    fx:id="selectMergeTo"/>
-                            <TextField GridPane.columnIndex="1" promptText="Source folder path, e.g. C:\Users\..."
-                                       fx:id="mergeFrom"/>
-                            <TextField GridPane.columnIndex="1" GridPane.rowIndex="1"
-                                       promptText="Target folder path, e.g. C:\Users\..." fx:id="mergeTo"/>
+                            <Label text="%manifestFile"/>
+                            <Label text="%targetDir" GridPane.rowIndex="1"/>
+                            <Button fx:id="selectMergeFrom" mnemonicParsing="false" onMouseClicked="#chooseFile"
+                                    text="%browse" GridPane.columnIndex="2" GridPane.halignment="RIGHT"/>
+                            <Button fx:id="selectMergeTo" mnemonicParsing="false" onMouseClicked="#chooseDirectory"
+                                    text="%browse" GridPane.columnIndex="2" GridPane.halignment="RIGHT"
+                                    GridPane.rowIndex="1"/>
+                            <TextField fx:id="mergeFrom" GridPane.columnIndex="1"/>
+                            <TextField fx:id="mergeTo" GridPane.columnIndex="1" GridPane.rowIndex="1"/>
                         </GridPane>
                     </center>
                     <bottom>
-                        <Button BorderPane.alignment="CENTER" mnemonicParsing="false" onMouseClicked="#merge"
-                                text="Merge Repository"/>
+                        <Button mnemonicParsing="false" onMouseClicked="#merge" text="%merge"
+                                BorderPane.alignment="CENTER"/>
                     </bottom>
                     <padding>
                         <Insets bottom="10.0" left="10.0" right="10.0" top="10.0"/>

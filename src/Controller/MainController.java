@@ -3,6 +3,7 @@ package Controller;
 import Model.RepositoryManager;
 import javafx.event.Event;
 import javafx.fxml.FXML;
+import javafx.fxml.Initializable;
 import javafx.scene.control.Button;
 import javafx.scene.control.TextField;
 import javafx.stage.DirectoryChooser;
@@ -11,18 +12,21 @@ import javafx.stage.Stage;
 
 import java.io.File;
 import java.io.IOException;
+import java.net.URL;
 import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.ResourceBundle;
 
-public class MainController {
+public class MainController implements Initializable {
     /**
      * Other needed variables
      */
     private static final FileChooser fileChooser;
     private static final DirectoryChooser directoryChooser;
     private static final RepositoryManager repositoryManager;
+    private static String hierarchy;
 
     static {
         fileChooser = new FileChooser();
@@ -67,6 +71,10 @@ public class MainController {
     private Button selectMergeFrom;
     @FXML
     private Button selectMergeTo;
+
+    public void initialize(URL url, ResourceBundle res) {
+        hierarchy = res.getString("hierarchy");
+    }
 
     public void chooseFile(Event event) {
         if (event.getSource().equals(selectCheckoutFrom) || event.getSource().equals(selectMergeFrom)) {
