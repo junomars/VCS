@@ -179,7 +179,7 @@
                     </center>
                     <bottom>
                         <Button BorderPane.alignment="CENTER" mnemonicParsing="false" onMouseClicked="#merge"
-                                text="Merge Repository" fx:id="mergeRepo"/>
+                                text="Merge Repository"/>
                     </bottom>
                     <padding>
                         <Insets bottom="10.0" left="10.0" right="10.0" top="10.0"/>

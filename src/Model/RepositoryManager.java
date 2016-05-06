@@ -7,10 +7,7 @@ import java.io.OutputStream;
 import java.nio.file.*;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Iterator;
-import java.util.NoSuchElementException;
+import java.util.*;
 
 import static java.nio.file.FileVisitResult.CONTINUE;
 import static java.nio.file.FileVisitResult.SKIP_SUBTREE;
@@ -19,9 +16,50 @@ import static java.nio.file.StandardOpenOption.APPEND;
 import static java.nio.file.StandardOpenOption.CREATE;
 
 /**
- * Created by jonat on 4/16/2016.
+ *
  */
 public class RepositoryManager {
+    private static ArrayList<Path> getFileLineage(Path manifest) {
+        ArrayList<Path> manifestLineage = new ArrayList<>();
+        List<String> lines = null;
+        String parentFile;
+
+        try {
+            while (manifest != null) {
+                manifestLineage.add(manifest);
+
+                // Open manifest
+                lines = Files.readAllLines(manifest);
+
+                // Get the parent file
+                if (!lines.get(lines.indexOf("Parent File: ") + 1).equals("null")) {
+                    parentFile = lines.get(lines.indexOf("Parent File: ") + 1);
+                } else break;
+
+                // Update manifest
+                manifest = Paths.get(parentFile);
+            }
+
+            return manifestLineage;
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        return null;
+    }
+
+    private static int getAIDFrom(Path file) throws IOException {
+        int checksum = 0;
+        int readChar;
+
+        InputStream fileStream = Files.newInputStream(file);
+        while ((readChar = fileStream.read()) != -1) {
+            checksum += readChar;
+        }
+
+        return checksum % 256;
+    }
+
     /**
      * Used to either create a repo that doesn't already exist or to check in an existing repo
      *
@@ -31,13 +69,21 @@ public class RepositoryManager {
     public void checkIn(Path source, Path target) {
         Path manifestFile;
         Path manifestFolder;
-        Path parentFile = null;
+        final Path[] parentFile = {null};
         LocalDateTime dt = LocalDateTime.now();
 
         // Create a folder for the manifests if it doesn't already exist
         manifestFolder = target.resolve("manifests");
         try {
-            parentFile = Files.list(manifestFolder).sorted((o1, o2) -> o2.toString().compareTo(o1.toString())).findFirst().get();
+            Files.list(manifestFolder).sorted().forEach(mani -> {
+                try {
+                    if (Files.readAllLines(mani).contains(source.toString())) {
+                        parentFile[0] = mani;
+                    }
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            });
         } catch (NoSuchElementException e) {
             // Ignore
         } catch (IOException e) {
@@ -60,21 +106,28 @@ public class RepositoryManager {
             output.write("Project File Tree:\n".getBytes());
             Files.walkFileTree(source, new CopyTreeVisitor(source, target, output));
 
+            // List files
+            output.write("\nProject Files:\n".getBytes());
+            Files.list(source).forEach(filePath -> {
+                try {
+                    output.write(String.format("%s %d%n", source.getParent().relativize(filePath), getAIDFrom(filePath)).getBytes());
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            });
+
             // Grab Parent
-            if (parentFile == null) {
-                output.write(String.format("%nParent file: %n%s%n", "null").getBytes());
+            if (parentFile[0] == null) {
+                output.write(String.format("%nParent File: %n%s%n", "null").getBytes());
             } else {
-                output.write(String.format("%nParent file: %n%s%n", parentFile.toString()).getBytes());
+                output.write(String.format("%nParent File: %n%s%n", parentFile[0].toString()).getBytes());
             }
 
             // Enter project location
             output.write(String.format("%nProject File Location: %n%s%n", source.toString()).getBytes());
 
             // Enter time stamp
-            output.write(String.format("%nDate and time written:%n%s%n", dt.toString()).getBytes());
-
-            // Close file
-            output.close();
+            output.write(String.format("%nDate and Time Written:%n%s%n", dt.toString()).getBytes());
         } catch (IOException e) {
             System.err.format("Error writing manifest: %s, %s%n", manifestFile, e);
         }
@@ -83,6 +136,7 @@ public class RepositoryManager {
     public void checkOut(Path manifestFile, Path target) {
         Path fileToCopy;
         Path newManifestFile;
+        Path targetCopy = target;
         LocalDateTime dt = LocalDateTime.now();
 
         fileToCopy = manifestFile.getParent().getParent();
@@ -157,7 +211,7 @@ public class RepositoryManager {
             output.write(String.format("%nProject File Location: %n%s%n", target).getBytes());
 
             // Enter time stamp
-            output.write(String.format("%nDate and time written:%n%s%n", dt.toString()).getBytes());
+            output.write(String.format("%nDate and Time Written%n%s%n", dt.toString()).getBytes());
 
             // Close file
             output.close();
@@ -169,10 +223,30 @@ public class RepositoryManager {
 
     public void merge(Path repoManifest, Path target) {
         Path treeManifest;
-        Path base = null;
+        Path mergeLocation;
+        Path baseManifest;
+        Path newManifestFile;
+        Path logFile;
+        Path repoLocation = repoManifest.getParent().getParent();
+        LocalDateTime dt = LocalDateTime.now();
 
-        // Get target manifest
-        try {
+        // Create our manifest file with time stamp
+        newManifestFile = repoManifest.getParent().resolve(dt.toString().replace(':', '_'));
+        logFile = repoManifest.getParent().resolve(dt.toString().replace(':', '_').concat("_log"));
+
+        try (OutputStream output = new BufferedOutputStream(
+                Files.newOutputStream(newManifestFile, CREATE, APPEND));
+             OutputStream log = new BufferedOutputStream(
+                     Files.newOutputStream(logFile, CREATE, APPEND))
+        ) {
+            // Get the merge location from the repo manifest file
+            Iterator<String> repoLines = Files.readAllLines(repoManifest).iterator();
+            while (repoLines.hasNext()) {
+                if (repoLines.next().contains("Project File Location:")) break;
+            }
+            mergeLocation = Paths.get(repoLines.next());
+
+            // Get target manifest
             // Iterate through all the files in the manifest folder to find possible manifest
             ArrayList<Path> manifests = new ArrayList<>();
             Iterator<Path> iter = Files.list(repoManifest.getParent()).iterator();
@@ -183,34 +257,192 @@ public class RepositoryManager {
                 }
             }
 
-            // Find the first check in within the manifests (i.e. the check out manifest that started it all)
-            Collections.sort(manifests);
-            Iterator<String> lines = Files.readAllLines(manifests.get(0)).iterator();
-            String debug;
-            while (lines.hasNext()) {
-                debug = lines.next();
-                if (debug.contains("Parent File:")) {
-                    System.out.format("-%s-%n", debug);
-                    break;
-                }
-            }
-            base = Paths.get(lines.next());
-
             // Find the last check in, this is our mergeFrom manifest
+            Collections.sort(manifests);
             treeManifest = manifests.get(manifests.size() - 1);
 
-            System.out.printf("repo: %s%ntree: %s%ngramps: %s%nat: %s%n", repoManifest, treeManifest, base, target);
+            // Find the grandpa or base file
+            ArrayList<Path> targetLineage = getFileLineage(treeManifest);
+            ArrayList<Path> repoLineage = getFileLineage(repoManifest);
+            targetLineage.retainAll(repoLineage);
+            baseManifest = targetLineage.get(0);
+
+            // Find our files from our trees
+            List<String> treeHierarchy = Files.readAllLines(treeManifest);
+            treeHierarchy = treeHierarchy.subList(treeHierarchy.indexOf("Project Files:") + 1, treeHierarchy.indexOf("Parent File: ") - 1);
+
+            List<String> mergeHierarchy = Files.readAllLines(repoManifest);
+            mergeHierarchy = mergeHierarchy.subList(mergeHierarchy.indexOf("Project Files:") + 1, mergeHierarchy.indexOf("Parent File: ") - 1);
+
+            List<String> baseHierarchy = Files.readAllLines(baseManifest);
+            baseHierarchy = baseHierarchy.subList(baseHierarchy.indexOf("Project Files:") + 1, baseHierarchy.indexOf("Parent File: ") - 1);
+
+            ArrayList<Path> conflicts = new ArrayList<>();
+
+            for (String path : mergeHierarchy) {
+                // Split to get path - aid
+                String[] tokens = path.split(" ");
+
+                // Check for conflict in files
+                if (tokens.length == 2 && treeHierarchy.stream().anyMatch(line -> line.contains(tokens[0]))) {
+                    int treeAID = -1;
+                    int baseAID = -1;
+
+                    // Get other AIDs
+                    for (String treeLine : treeHierarchy) {
+                        if (treeLine.contains(tokens[0])) {
+                            treeAID = Integer.parseInt(treeLine.split(" ")[1]);
+                        }
+                    }
+
+                    for (String baseLine : baseHierarchy) {
+                        if (baseLine.contains(tokens[0])) {
+                            baseAID = Integer.parseInt(baseLine.split(" ")[1]);
+                        }
+                    }
+
+                    // Prepare our files - we need our file location and the copies
+                    String extension = tokens[0].substring(tokens[0].lastIndexOf("."));
+                    conflicts.add(mergeLocation.getParent().resolve(path.substring(0, path.lastIndexOf(".")) + extension));
+                    Path mt = mergeLocation.getParent().resolve(path.substring(0, path.lastIndexOf(".")) + "_MT" + extension);
+                    Path mr = mergeLocation.getParent().resolve(path.substring(0, path.lastIndexOf(".")) + "_MR" + extension);
+                    Path mg = mergeLocation.getParent().resolve(path.substring(0, path.lastIndexOf(".")) + "_MG" + extension);
+                    Path mt_copy = repoLocation.resolve(tokens[0]).resolve("" + treeAID);
+                    Path mr_copy = repoLocation.resolve(tokens[0]).resolve("" + Integer.parseInt(tokens[1]));
+                    Path mg_copy = repoLocation.resolve(tokens[0]).resolve("" + baseAID);
+
+                    // Write to log file
+                    log.write(String.format("%s:%n%s %n%s %n%s %n%n", tokens[0], mt_copy, mr_copy, mg_copy).getBytes());
+
+                    // Create new files
+                    Files.createDirectories(mt.getParent());
+                    Files.copy(mt_copy, mt, REPLACE_EXISTING);
+                    Files.copy(mr_copy, mr, REPLACE_EXISTING);
+                    Files.copy(mg_copy, mg, REPLACE_EXISTING);
+                } else if (tokens.length == 2) {
+                    // Add non conflicting files
+                    Path newFile = mergeLocation.getParent().resolve(tokens[0]);
+                    Files.createDirectories(newFile.getParent());
+                    Files.createFile(newFile);
+                    Files.copy(repoLocation.resolve(tokens[0]).resolve(tokens[1]), newFile, REPLACE_EXISTING);
+                } else {
+                    // Add folders
+                    Path newDir = mergeLocation.getParent().resolve(tokens[0]);
+                    Files.createDirectories(newDir);
+                }
+            }
+
+            // Create our project hierarchy
+            output.write("Project File Tree:\n".getBytes());
+            Files.walkFileTree(mergeLocation, new FileVisitor<Path>() {
+                final String fileFormat = "%s%3s %s %d%n"; // depth, attributes, path, aid
+                int checksum;
+                byte walkData[];
+                String depth = "";
+                String fileProperties = "";
+
+                @Override
+                public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) throws IOException {
+                    try {
+                        // Copy directory to the manifest
+                        walkData = String.format("%s%s/%n", depth, dir.getFileName()).getBytes();
+                        output.write(walkData, 0, walkData.length);
+                    } catch (IOException e) {
+                        System.err.format("Unable to copy folder: %s: %s%n", dir, e);
+                        return SKIP_SUBTREE;
+                    }
+
+                    depth += "    ";
+                    return CONTINUE;
+                }
+
+                @Override
+                public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
+                    fileProperties = "";
+
+                    if (file.toString().contains("_MG.") || file.toString().contains("_MR.") || file.toString().contains("_MT.")) {
+                        return CONTINUE;
+                    }
+
+                    // Copy file through createAID() and write file name with it's AID in manifest
+                    try {
+                        // Read file contents to create checksum
+                        checksum = getAIDFrom(file);
+
+                        // Adding file properties
+                        fileProperties += Files.isReadable(file) ? 'R' : '_';
+                        fileProperties += Files.isWritable(file) ? 'W' : '_';
+                        fileProperties += Files.isExecutable(file) ? 'E' : '_';
+
+                        // Create our line and write
+                        walkData = String.format(fileFormat, depth, fileProperties, file.getFileName().toString(), checksum).getBytes();
+                        output.write(walkData, 0, walkData.length);
+                    } catch (IOException e) {
+                        System.out.format("Error writing to file: %s%n", file);
+                    }
+
+                    return CONTINUE;
+                }
+
+                @Override
+                public FileVisitResult visitFileFailed(Path file, IOException exc) throws IOException {
+                    if (exc instanceof FileSystemLoopException) {
+                        System.err.println("cycle detected: " + file);
+                    } else {
+                        System.err.format("Unable to copy: %s: %s%n", file, exc);
+                    }
+                    return CONTINUE;
+                }
+
+                @Override
+                public FileVisitResult postVisitDirectory(Path dir, IOException exc) throws IOException {
+                    depth = depth.substring(0, depth.length() - 4);
+                    return CONTINUE;
+                }
+            });
+
+            // List files
+            output.write("\nProject Files:\n".getBytes());
+            Files.list(mergeLocation).forEach(filePath -> {
+                try {
+                    if (filePath.toString().contains("_MG.") || filePath.toString().contains("_MR.") || filePath.toString().contains("_MT.")) {
+                        // do nothing
+                    } else {
+                        output.write(String.format("%s %d%n", mergeLocation.getParent().relativize(filePath), getAIDFrom(filePath)).getBytes());
+                    }
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            });
+
+            conflicts.stream().forEach(path -> {
+                try {
+                    Files.deleteIfExists(path);
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            });
+
+
+            // Grab Parents
+            output.write(String.format("%nParent File: %nTo Be: %s%nBefore: %s%n", repoManifest, treeManifest).getBytes());
+
+            // Enter project location
+            output.write(String.format("%nProject File Location: %n%s%n", mergeLocation).getBytes());
+
+            // Enter time stamp
+            output.write(String.format("%nDate and Time Written:%n%s%n", dt.toString()).getBytes());
         } catch (IOException e) {
             e.printStackTrace();
         }
     }
 
     private static class CopyTreeVisitor implements FileVisitor<Path> {
+        final String fileFormat = "%s%3s %s %d%n"; // depth, attributes, path, aid
         int checksum;
         byte walkData[];
         String depth = "";
         String fileProperties = "";
-        String fileFormat = "%s%3s %s %d%n"; // depth, attributes, path, aid
         Path source;
         Path target;
         OutputStream output;
@@ -272,15 +504,7 @@ public class RepositoryManager {
                     Files.createDirectory(newDir);
 
                 // Read file contents to create checksum
-                checksum = 0;
-                int readChar;
-
-                InputStream fileStream = Files.newInputStream(file);
-                while ((readChar = fileStream.read()) != -1) {
-                    checksum += readChar;
-                }
-
-                checksum %= 256;
+                checksum = getAIDFrom(file);
 
                 // Create our file
                 Path aidFile = newDir.resolve(checksum + "");

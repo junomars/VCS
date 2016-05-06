@@ -20,9 +20,9 @@ public class MainController {
     /**
      * Other needed variables
      */
-    private static FileChooser fileChooser;
-    private static DirectoryChooser directoryChooser;
-    private static RepositoryManager repositoryManager;
+    private static final FileChooser fileChooser;
+    private static final DirectoryChooser directoryChooser;
+    private static final RepositoryManager repositoryManager;
 
     static {
         fileChooser = new FileChooser();
@@ -121,9 +121,8 @@ public class MainController {
     /**
      * Creates a repository of the source folder in the target folder
      *
-     * @param event the event identifies the source object
      */
-    public void createRepo(Event event) {
+    public void createRepo() {
         /**
          * FIXME: Don't assume folders exist and there is adequate diskspace
          * This can be done by adding a listener to the fields and
@@ -163,7 +162,7 @@ public class MainController {
         }
     }
 
-    public void checkinRepo(Event event) {
+    public void checkinRepo() {
         Path source = Paths.get(checkinFrom.getText());
         Path repo = Paths.get(checkinTo.getText());
 
@@ -171,7 +170,7 @@ public class MainController {
         System.out.println("Repository successfully checked in.");
     }
 
-    public void checkoutRepo(Event event) {
+    public void checkoutRepo() {
         Path target = Paths.get(checkoutTo.getText());
         Path manifest = Paths.get(checkoutFrom.getText());
 
@@ -179,7 +178,7 @@ public class MainController {
         System.out.println("Repository successfully checked out.");
     }
 
-    public void merge(Event event) {
+    public void merge() {
         Path target = Paths.get(mergeTo.getText());
         Path manifest = Paths.get(mergeFrom.getText());
 
