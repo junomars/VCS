@@ -6,6 +6,22 @@ import javafx.stage.Stage;
 
 import java.util.ResourceBundle;
 
+/**
+ * TODO: Tasks
+ * Implement localization further
+ * Implement auto merge option
+ * <p>
+ * TODO: Extra Features
+ * Browse opens at current edit box location
+ * Update program to keep a list of repositories
+ * <p>
+ * TODO: Bugs
+ * Project files do not get written on deeper file levels on checkin
+ * Hint: Access denied exception when running the program and a
+ * new folder is created at the same time
+ * Fix recursion
+ * Old files aren't deleted in merge unless program closes
+ */
 public class Main extends Application {
 
     public static void main(String[] args) {

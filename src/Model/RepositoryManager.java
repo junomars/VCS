@@ -279,19 +279,19 @@ public class RepositoryManager {
 
             ArrayList<Path> conflicts = new ArrayList<>();
 
-            for (String path : mergeHierarchy) {
+            for (String path : treeHierarchy) {
                 // Split to get path - aid
                 String[] tokens = path.split(" ");
 
                 // Check for conflict in files
-                if (tokens.length == 2 && treeHierarchy.stream().anyMatch(line -> line.contains(tokens[0]))) {
+                if (tokens.length == 2 && mergeHierarchy.stream().anyMatch(line -> line.contains(tokens[0]))) {
                     int treeAID = -1;
                     int baseAID = -1;
 
                     // Get other AIDs
-                    for (String treeLine : treeHierarchy) {
-                        if (treeLine.contains(tokens[0])) {
-                            treeAID = Integer.parseInt(treeLine.split(" ")[1]);
+                    for (String mergeLine : mergeHierarchy) {
+                        if (mergeLine.contains(tokens[0])) {
+                            treeAID = Integer.parseInt(mergeLine.split(" ")[1]);
                         }
                     }
 
